@@ -101,3 +101,8 @@ local.properties
 .cache-main
 .scala_dependencies
 .worksheet
+
+#############
+
+accountservice/accounts.db
+accountservice/accounts.db.lock
