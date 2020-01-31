@@ -6,7 +6,7 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/eriklupander/go-microservice-config.git
+          uri: https://github.com/newmind/go-microservice-config.git
           
 # Home-baked keystore for encryption. Of course, a real environment wouldn't expose passwords in a blog...          
 encrypt:
