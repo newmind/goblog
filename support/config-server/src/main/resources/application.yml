@@ -1,0 +1,26 @@
+---
+# For deployment in Docker containers
+spring:
+  profiles: docker
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/eriklupander/go-microservice-config.git
+          
+# Home-baked keystore for encryption. Of course, a real environment wouldn't expose passwords in a blog...          
+encrypt:
+  key-store:
+    location: file:/server.jks
+    password: letmein
+    alias: goblogkey
+    secret: changeme
+
+# Since we're running in Docker Swarm mode, disable Eureka Service Discovery
+eureka:
+  client:
+    enabled: false
+
+# Spring Cloud Config requires rabbitmq, use the service name.
+spring.rabbitmq.host: rabbitmq
+spring.rabbitmq.port: 5672
