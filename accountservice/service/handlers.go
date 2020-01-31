@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -22,6 +23,8 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	account.ServedBy = getIP()
+
 	// If found, marshal into JSON, write headers and content
 	data, _ := json.Marshal(account)
 	w.Header().Set("Content-Type", "application/json")
@@ -66,4 +69,20 @@ func SetHealthyState(w http.ResponseWriter, r *http.Request) {
 	// Otherwise, mutate the package scoped "isHealthy" variable.
 	isHealthy = state
 	w.WriteHeader(http.StatusOK)
+}
+
+func getIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "error"
+	}
+	for _, address := range addrs {
+		// check the address type and if it is not a loopback the display it
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	panic("Unable to determine local IP address (non loopback). Exiting.")
 }
