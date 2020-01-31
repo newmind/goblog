@@ -3,15 +3,26 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
 
 	"github.com/callistaenterprise/goblog/accountservice/dbclient"
+	"github.com/callistaenterprise/goblog/accountservice/model"
 	"github.com/gorilla/mux"
 )
 
 var DBClient dbclient.IBoltClient
+
+var client = &http.Client{}
+
+func init() {
+	var transport http.RoundTripper = &http.Transport{
+		DisableKeepAlives: true,
+	}
+	client.Transport = transport
+}
 
 func GetAccount(w http.ResponseWriter, r *http.Request) {
 	// Read the 'accountId' path parameter from the mux map
@@ -24,6 +35,11 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	account.ServedBy = getIP()
+
+	quote, err := getQuote()
+	if err == nil {
+		account.Quote = quote
+	}
 
 	// If found, marshal into JSON, write headers and content
 	data, _ := json.Marshal(account)
@@ -85,4 +101,17 @@ func getIP() string {
 		}
 	}
 	panic("Unable to determine local IP address (non loopback). Exiting.")
+}
+
+func getQuote() (model.Quote, error) {
+	req, _ := http.NewRequest("GET", "http://quotes-service:8080/api/quote?strength=4", nil)
+	resp, err := client.Do(req)
+	if err == nil && resp.StatusCode == 200 {
+		quote := model.Quote{}
+		bytes, _ := ioutil.ReadAll(resp.Body)
+		json.Unmarshal(bytes, &quote)
+		return quote, nil
+	} else {
+		return model.Quote{}, fmt.Errorf("Some error")
+	}
 }
