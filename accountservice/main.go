@@ -37,6 +37,7 @@ func main() {
 		viper.GetString("configBranch"))
 
 	initializeBoltClient() // NEW
+	go config.StartListener(appName, viper.GetString("amqp_server_url"), viper.GetString("config_event_bus"))
 	service.StartWebServer(viper.GetString("server_port"))
 }
 
