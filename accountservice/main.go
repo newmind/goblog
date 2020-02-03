@@ -29,6 +29,15 @@ func init() {
 	viper.Set("profile", *profile)
 	viper.Set("configServerUrl", *configServerUrl)
 	viper.Set("configBranch", *configBranch)
+
+	if *profile == "dev" {
+		logrus.SetFormatter(&logrus.TextFormatter{
+			TimestampFormat: "2006-01-02T15:04:05.000",
+			FullTimestamp:   true,
+		})
+	} else {
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+	}
 }
 
 func main() {
