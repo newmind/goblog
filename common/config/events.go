@@ -133,14 +133,14 @@ func handle(deliveries <-chan amqp.Delivery, done chan error) {
 			d.RoutingKey,
 			d.Body,
 		)
-		handleRefreshEvent(d.Body, d.ConsumerTag)
+		HandleRefreshEvent(d.Body, d.ConsumerTag)
 		d.Ack(false)
 	}
 	log.Printf("handle: deliveries channel closed")
 	done <- nil
 }
 
-func handleRefreshEvent(body []byte, consumerTag string) {
+func HandleRefreshEvent(body []byte, consumerTag string) {
 	updateToken := &UpdateToken{}
 	err := json.Unmarshal(body, updateToken)
 	if err != nil {

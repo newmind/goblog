@@ -27,7 +27,7 @@ func TestHandleRefreshEvent(t *testing.T) {
 		var body = `{"type":"RefreshRemoteApplicationEvent","timestamp":1494514362123,"originService":"config-server:docker:8888","destinationService":"accountservice:**","id":"53e61c71-cbae-4b6d-84bb-d0dcc0aeb4dc"}
 `
 		Convey("When handled", func() {
-			handleRefreshEvent([]byte(body), SERVICE_NAME)
+			HandleRefreshEvent([]byte(body), SERVICE_NAME)
 
 			Convey("Then Viper should have been re-populated with values from Source", func() {
 				So(viper.GetString("server_name"), ShouldEqual, "Accountservice RELOADED")

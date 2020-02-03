@@ -7,13 +7,16 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/callistaenterprise/goblog/accountservice/dbclient"
 	"github.com/callistaenterprise/goblog/accountservice/model"
+	"github.com/callistaenterprise/goblog/common/messaging"
 	"github.com/gorilla/mux"
 )
 
 var DBClient dbclient.IBoltClient
+var MessagingClient messaging.IMessagingClient
 
 var client = &http.Client{}
 
@@ -40,6 +43,8 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		account.Quote = quote
 	}
+
+	notifyVIP(account) // Send VIP notification concurrently.
 
 	// If found, marshal into JSON, write headers and content
 	data, _ := json.Marshal(account)
@@ -113,5 +118,19 @@ func getQuote() (model.Quote, error) {
 		return quote, nil
 	} else {
 		return model.Quote{}, fmt.Errorf("Some error")
+	}
+}
+
+// If our hard-coded "VIP" account, spawn a goroutine to send a message.
+func notifyVIP(account model.Account) {
+	if account.Id == "10000" {
+		go func(account model.Account) {
+			vipNotification := model.VipNotification{AccountId: account.Id, ReadAt: time.Now().UTC().String()}
+			data, _ := json.Marshal(vipNotification)
+			err := MessagingClient.PublishOnQueue(data, "vipQueue")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}(account)
 	}
 }
