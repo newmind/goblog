@@ -3,6 +3,9 @@ package main // import "github.com/callistaenterprise/goblog/accountservice"
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/callistaenterprise/goblog/accountservice/dbclient"
 	"github.com/callistaenterprise/goblog/accountservice/service"
@@ -39,6 +42,9 @@ func main() {
 
 	initializeBoltClient() // NEW
 	initializeMessaging()
+	handleSigterm(func() {
+		service.MessagingClient.Close()
+	})
 	service.StartWebServer(viper.GetString("server_port"))
 }
 
@@ -58,4 +64,16 @@ func initializeMessaging() {
 	service.MessagingClient = &messaging.MessagingClient{}
 	service.MessagingClient.ConnectToBroker(viper.GetString("amqp_server_url"))
 	// service.MessagingClient.Subscribe(viper.GetString("config_event_bus"), "topic", appName, config.HandleRefreshEvent)
+}
+
+// Handles Ctrl+C or most other means of "controlled" shutdown gracefully. Invokes the supplied func before exiting.
+func handleSigterm(handleExit func()) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGTERM)
+	go func() {
+		<-c
+		handleExit()
+		os.Exit(1)
+	}()
 }
