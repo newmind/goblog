@@ -23,7 +23,7 @@ var messagingClient messaging.IMessagingClient
 func init() {
 	configServerUrl := flag.String("configServerUrl", "http://192.168.6.190:8888", "Address to config server")
 	profile := flag.String("profile", "dev", "Environment profile, something similar to spring profiles")
-	configBranch := flag.String("configBranch", "P9", "git branch to fetch configuration from")
+	configBranch := flag.String("configBranch", "P10", "git branch to fetch configuration from")
 	flag.Parse()
 
 	viper.Set("profile", *profile)

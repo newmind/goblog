@@ -22,7 +22,7 @@ func init() {
 	// Read command line flags
 	profile := flag.String("profile", "dev", "Environment profile, something similar to spring profiles")
 	configServerUrl := flag.String("configServerUrl", "http://192.168.6.190:8888", "Address to config server")
-	configBranch := flag.String("configBranch", "P9", "git branch to fetch configuration from")
+	configBranch := flag.String("configBranch", "P10", "git branch to fetch configuration from")
 	flag.Parse()
 
 	// Pass the flag values into viper.
