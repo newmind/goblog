@@ -10,6 +10,7 @@ import (
 	"github.com/callistaenterprise/goblog/common/config"
 	"github.com/callistaenterprise/goblog/common/messaging"
 	"github.com/callistaenterprise/goblog/vipservice/service"
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
@@ -31,7 +32,7 @@ func init() {
 }
 
 func main() {
-	fmt.Println("Starting " + appName + "...")
+	logrus.Infoln("Starting " + appName + "...")
 
 	config.LoadConfigurationFromBranch(viper.GetString("configServerUrl"), appName, viper.GetString("profile"), viper.GetString("configBranch"))
 	initializeMessaging()
@@ -47,7 +48,7 @@ func main() {
 
 // The callback function that's invoked whenever we get a message on the "vipQueue"
 func onMessage(delivery amqp.Delivery) {
-	fmt.Printf("Got a message: %v\n", string(delivery.Body))
+	logrus.Infof("Got a message: %v\n", string(delivery.Body))
 }
 
 func initializeMessaging() {
@@ -79,7 +80,7 @@ func handleSigterm(handleExit func()) {
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		fmt.Printf("%s: %s", msg, err)
+		logrus.Infof("%s: %s", msg, err)
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }

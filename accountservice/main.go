@@ -2,7 +2,6 @@ package main // import "github.com/callistaenterprise/goblog/accountservice"
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +10,7 @@ import (
 	"github.com/callistaenterprise/goblog/accountservice/service"
 	"github.com/callistaenterprise/goblog/common/config"
 	"github.com/callistaenterprise/goblog/common/messaging"
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -32,7 +32,7 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("Starting %v\n", appName)
+	logrus.Infof("Starting %v\n", appName)
 
 	config.LoadConfigurationFromBranch(
 		viper.GetString("configServerUrl"),

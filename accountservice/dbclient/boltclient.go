@@ -8,6 +8,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/callistaenterprise/goblog/accountservice/model"
+	"github.com/sirupsen/logrus"
 )
 
 type IBoltClient interface {
@@ -67,7 +68,7 @@ func (bc *BoltClient) seedAccounts() {
 			return err
 		})
 	}
-	fmt.Printf("Seeded %v fake accounts...\n", total)
+	logrus.Infof("Seeded %v fake accounts...\n", total)
 }
 
 func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {

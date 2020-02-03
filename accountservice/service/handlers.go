@@ -13,6 +13,7 @@ import (
 	"github.com/callistaenterprise/goblog/accountservice/model"
 	"github.com/callistaenterprise/goblog/common/messaging"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 var DBClient dbclient.IBoltClient
@@ -83,7 +84,7 @@ func SetHealthyState(w http.ResponseWriter, r *http.Request) {
 	var state, err = strconv.ParseBool(mux.Vars(r)["state"])
 	// If we couldn't parse the state param, return a HTTP 400
 	if err != nil {
-		fmt.Println("Invalid request to SetHealthyState, allowed values are true or false")
+		logrus.Infoln("Invalid request to SetHealthyState, allowed values are true or false")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -129,7 +130,7 @@ func notifyVIP(account model.Account) {
 			data, _ := json.Marshal(vipNotification)
 			err := MessagingClient.PublishOnQueue(data, "vipQueue")
 			if err != nil {
-				fmt.Println(err.Error())
+				logrus.Infoln(err.Error())
 			}
 		}(account)
 	}
