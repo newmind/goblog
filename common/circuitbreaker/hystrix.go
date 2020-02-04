@@ -1,15 +1,20 @@
 package circuitbreaker
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/afex/hystrix-go/hystrix"
+	"github.com/callistaenterprise/goblog/common/messaging"
+	"github.com/callistaenterprise/goblog/common/util"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -77,4 +82,86 @@ func callWithRetries(req *http.Request, output chan []byte) error {
 		return err
 	})
 	return err
+}
+
+func ConfigureHystrix(commands []string, amqpClient messaging.IMessagingClient) {
+
+	for _, command := range commands {
+		hystrix.ConfigureCommand(command, hystrix.CommandConfig{
+			Timeout:                resolveProperty(command, "Timeout"),
+			MaxConcurrentRequests:  resolveProperty(command, "MaxConcurrentRequests"),
+			ErrorPercentThreshold:  resolveProperty(command, "ErrorPercentThreshold"),
+			RequestVolumeThreshold: resolveProperty(command, "RequestVolumeThreshold"),
+			SleepWindow:            resolveProperty(command, "SleepWindow"),
+		})
+		logrus.Printf("Circuit %v settings: %v", command, hystrix.GetCircuitSettings()[command])
+	}
+
+	hystrixStreamHandler := hystrix.NewStreamHandler()
+	hystrixStreamHandler.Start()
+	go http.ListenAndServe(net.JoinHostPort("", "8181"), hystrixStreamHandler)
+	logrus.Infoln("Launched hystrixStreamHandler at 8181")
+
+	// Publish presence on RabbitMQ
+	publishDiscoveryToken(amqpClient)
+}
+
+func Deregister(amqpClient messaging.IMessagingClient) {
+	ip, err := util.ResolveIpFromHostsFile()
+	if err != nil {
+		ip = util.GetIPWithPrefix("10.0.")
+	}
+	token := DiscoveryToken{
+		State:   "DOWN",
+		Address: ip,
+	}
+	bytes, _ := json.Marshal(token)
+	amqpClient.PublishOnQueue(bytes, "discovery")
+}
+
+func publishDiscoveryToken(amqpClient messaging.IMessagingClient) {
+	ip, err := util.ResolveIpFromHostsFile()
+	if err != nil {
+		ip = util.GetIPWithPrefix("10.0.")
+	}
+	token := DiscoveryToken{
+		State:   "UP",
+		Address: ip,
+	}
+	bytes, _ := json.Marshal(token)
+	go func() {
+		for {
+			amqpClient.PublishOnQueue(bytes, "discovery")
+			amqpClient.PublishOnQueue(bytes, "discovery")
+			time.Sleep(time.Second * 30)
+		}
+	}()
+}
+
+func resolveProperty(command string, prop string) int {
+	if viper.IsSet("hystrix.command." + command + "." + prop) {
+		return viper.GetInt("hystrix.command." + command + "." + prop)
+	} else {
+		return getDefaultHystrixConfigPropertyValue(prop)
+	}
+}
+func getDefaultHystrixConfigPropertyValue(prop string) int {
+	switch prop {
+	case "Timeout":
+		return hystrix.DefaultTimeout
+	case "MaxConcurrentRequests":
+		return hystrix.DefaultMaxConcurrent
+	case "RequestVolumeThreshold":
+		return hystrix.DefaultVolumeThreshold
+	case "SleepWindow":
+		return hystrix.DefaultSleepWindow
+	case "ErrorPercentThreshold":
+		return hystrix.DefaultErrorPercentThreshold
+	}
+	panic("Got unknown hystrix property: " + prop + ". Panicing!")
+}
+
+type DiscoveryToken struct {
+	State   string `json:"state"` // UP, RUNNING, DOWN ??
+	Address string `json:"address"`
 }

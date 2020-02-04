@@ -23,7 +23,7 @@ var messagingClient messaging.IMessagingClient
 func init() {
 	configServerUrl := flag.String("configServerUrl", "http://192.168.6.190:8888", "Address to config server")
 	profile := flag.String("profile", "dev", "Environment profile, something similar to spring profiles")
-	configBranch := flag.String("configBranch", "P10", "git branch to fetch configuration from")
+	configBranch := flag.String("configBranch", "P11", "git branch to fetch configuration from")
 	flag.Parse()
 
 	viper.Set("profile", *profile)
@@ -46,7 +46,7 @@ func main() {
 	service.StartWebServer(viper.GetString("server_port"))
 }
 
-// The callback function that's invoked whenever we get a message on the "vipQueue"
+// The callback function that's invoked whenever we get a message on the "vip_queue"
 func onMessage(delivery amqp.Delivery) {
 	logrus.Infof("Got a message: %v\n", string(delivery.Body))
 }

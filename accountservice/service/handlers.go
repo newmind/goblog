@@ -46,19 +46,13 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	account.ServedBy = getIP()
 
-	quote, err := getQuote()
-	if err == nil {
-		account.Quote = quote
-	}
-
 	notifyVIP(account) // Send VIP notification concurrently.
+
+	account.Quote = getQuote()
 
 	// If found, marshal into JSON, write headers and content
 	data, _ := json.Marshal(account)
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	writeJsonResponse(w, http.StatusOK, data)
 }
 
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +108,7 @@ func getIP() string {
 	panic("Unable to determine local IP address (non loopback). Exiting.")
 }
 
-func getQuote() (model.Quote, error) {
+func getQuote() model.Quote {
 	body, err := cb.CallUsingCircuitBreaker(
 		"quotes-service",
 		"http://quotes-service:8080/api/quote?strength=4",
@@ -134,7 +128,7 @@ func notifyVIP(account model.Account) {
 		go func(account model.Account) {
 			vipNotification := model.VipNotification{AccountId: account.Id, ReadAt: time.Now().UTC().String()}
 			data, _ := json.Marshal(vipNotification)
-			err := MessagingClient.PublishOnQueue(data, "vipQueue")
+			err := MessagingClient.PublishOnQueue(data, "vip_queue")
 			if err != nil {
 				logrus.Infoln(err.Error())
 			}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/callistaenterprise/goblog/accountservice/dbclient"
 	"github.com/callistaenterprise/goblog/accountservice/service"
+	cb "github.com/callistaenterprise/goblog/common/circuitbreaker"
 	"github.com/callistaenterprise/goblog/common/config"
 	"github.com/callistaenterprise/goblog/common/messaging"
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ func init() {
 	// Read command line flags
 	profile := flag.String("profile", "dev", "Environment profile, something similar to spring profiles")
 	configServerUrl := flag.String("configServerUrl", "http://192.168.6.190:8888", "Address to config server")
-	configBranch := flag.String("configBranch", "P10", "git branch to fetch configuration from")
+	configBranch := flag.String("configBranch", "P11", "git branch to fetch configuration from")
 	flag.Parse()
 
 	// Pass the flag values into viper.
@@ -51,7 +52,10 @@ func main() {
 
 	initializeBoltClient() // NEW
 	initializeMessaging()
+	cb.ConfigureHystrix([]string{"quotes-service"}, service.MessagingClient)
+
 	handleSigterm(func() {
+		cb.Deregister(service.MessagingClient)
 		service.MessagingClient.Close()
 	})
 	service.StartWebServer(viper.GetString("server_port"))
