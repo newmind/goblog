@@ -49,6 +49,7 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 	notifyVIP(account) // Send VIP notification concurrently.
 
 	account.Quote = getQuote()
+	account.ImageUrl = getImageUrl(accountId)
 
 	// If found, marshal into JSON, write headers and content
 	data, _ := json.Marshal(account)
@@ -119,6 +120,18 @@ func getQuote() model.Quote {
 		return quote
 	} else {
 		return fallbackQuote
+	}
+}
+
+func getImageUrl(accountId string) string {
+	body, err := cb.CallUsingCircuitBreaker(
+		"imageservice",
+		"http://imageservice:7777/accounts/"+accountId,
+		"GET")
+	if err == nil {
+		return string(body)
+	} else {
+		return "http://path.to.placeholder"
 	}
 }
 

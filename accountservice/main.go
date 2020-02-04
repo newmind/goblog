@@ -52,7 +52,7 @@ func main() {
 
 	initializeBoltClient() // NEW
 	initializeMessaging()
-	cb.ConfigureHystrix([]string{"quotes-service"}, service.MessagingClient)
+	cb.ConfigureHystrix([]string{"imageservice", "quotes-service"}, service.MessagingClient)
 
 	handleSigterm(func() {
 		cb.Deregister(service.MessagingClient)
@@ -76,7 +76,7 @@ func initializeMessaging() {
 
 	service.MessagingClient = &messaging.MessagingClient{}
 	service.MessagingClient.ConnectToBroker(viper.GetString("amqp_server_url"))
-	// service.MessagingClient.Subscribe(viper.GetString("config_event_bus"), "topic", appName, config.HandleRefreshEvent)
+	service.MessagingClient.Subscribe(viper.GetString("config_event_bus"), "topic", appName, config.HandleRefreshEvent)
 }
 
 // Handles Ctrl+C or most other means of "controlled" shutdown gracefully. Invokes the supplied func before exiting.

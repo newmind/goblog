@@ -110,6 +110,7 @@ func Deregister(amqpClient messaging.IMessagingClient) {
 	ip, err := util.ResolveIpFromHostsFile()
 	if err != nil {
 		ip = util.GetIPWithPrefix("10.0.")
+		// ip = util.GetIPWithPrefix("192.168.")
 	}
 	token := DiscoveryToken{
 		State:   "DOWN",
