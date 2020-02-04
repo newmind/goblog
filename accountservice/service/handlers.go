@@ -2,8 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -11,15 +9,23 @@ import (
 
 	"github.com/callistaenterprise/goblog/accountservice/dbclient"
 	"github.com/callistaenterprise/goblog/accountservice/model"
+	cb "github.com/callistaenterprise/goblog/common/circuitbreaker"
 	"github.com/callistaenterprise/goblog/common/messaging"
+
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 var DBClient dbclient.IBoltClient
 var MessagingClient messaging.IMessagingClient
+var isHealthy = true // NEW
 
 var client = &http.Client{}
+
+var fallbackQuote = model.Quote{
+	Language: "en",
+	ServedBy: "circuit-breaker",
+	Text:     "May the source be with you, always."}
 
 func init() {
 	var transport http.RoundTripper = &http.Transport{
@@ -78,7 +84,6 @@ type healthCheckResponse struct {
 	Status string `json:"status"`
 }
 
-var isHealthy = true // NEW
 func SetHealthyState(w http.ResponseWriter, r *http.Request) {
 	// Read the 'state' path parameter from the mux map and convert to a bool
 	var state, err = strconv.ParseBool(mux.Vars(r)["state"])
@@ -110,15 +115,16 @@ func getIP() string {
 }
 
 func getQuote() (model.Quote, error) {
-	req, _ := http.NewRequest("GET", "http://quotes-service:8080/api/quote?strength=4", nil)
-	resp, err := client.Do(req)
-	if err == nil && resp.StatusCode == 200 {
+	body, err := cb.CallUsingCircuitBreaker(
+		"quotes-service",
+		"http://quotes-service:8080/api/quote?strength=4",
+		"GET")
+	if err == nil {
 		quote := model.Quote{}
-		bytes, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bytes, &quote)
-		return quote, nil
+		json.Unmarshal(body, &quote)
+		return quote
 	} else {
-		return model.Quote{}, fmt.Errorf("Some error")
+		return fallbackQuote
 	}
 }
 
